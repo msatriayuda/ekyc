@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold mb-6 text-center">ID Information Extraction</h2>
+    
+    <div class="space-y-4">
+        <div>
+            <label class="block mb-2 text-sm font-medium text-gray-700">
+                Upload ID Document
+            </label>
+            <input 
+                type="file" 
+                id="id-image-upload"
+                accept="image/*" 
+                class="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100"
+            >
+        </div>
+        
+        <button 
+            id="extract-btn"
+            class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+            disabled
+        >
+            Extract Information
+        </button>
+
+        <!-- Processing Indicator -->
+        <div id="processing-indicator" class="hidden flex justify-center items-center space-x-4">
+            <div class="animate-spin">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </div>
+            <span class="text-blue-500 font-semibold">Extracting Information...</span>
+        </div>
+    </div>
+    
+    <div id="result-container" class="mt-6 hidden">
+        <h3 class="text-xl font-semibold mb-4">Extracted Information</h3>
+        <div id="extracted-info" class="bg-gray-100 p-4 rounded"></div>
+        <div class="mt-4">
+            <img id="uploaded-image" class="max-w-full h-auto rounded" />
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('id-image-upload').addEventListener('change', function() {
+    const extractBtn = document.getElementById('extract-btn');
+    extractBtn.disabled = !this.files.length;
+});
+
+document.getElementById('extract-btn').addEventListener('click', function() {
+    const fileInput = document.getElementById('id-image-upload');
+    const file = fileInput.files[0];
+    
+    const formData = new FormData();
+    formData.append('id_image', file);
+    
+    // Show processing indicator
+    const processingIndicator = document.getElementById('processing-indicator');
+    const extractBtn = document.getElementById('extract-btn');
+    const resultContainer = document.getElementById('result-container');
+    
+    processingIndicator.classList.remove('hidden');
+    extractBtn.disabled = true;
+    resultContainer.classList.add('hidden');
+    
+    fetch('/id_extractor', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        const extractedInfo = document.getElementById('extracted-info');
+        const uploadedImage = document.getElementById('uploaded-image');
+        
+        if (data.error) {
+            extractedInfo.innerHTML = `Error: ${data.error}`;
+        } else {
+            extractedInfo.innerHTML = data.result;
+            uploadedImage.src = `data:image/jpeg;base64,${data.image}`;
+        }
+        
+        // Hide processing indicator
+        processingIndicator.classList.add('hidden');
+        extractBtn.disabled = false;
+        resultContainer.classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Hide processing indicator and show error
+        processingIndicator.classList.add('hidden');
+        extractBtn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

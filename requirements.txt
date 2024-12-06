@@ -1,0 +1,6 @@
+flask
+google-cloud-aiplatform
+google-cloud-storage
+python-dotenv
+pillow
+opencv-python-headless
